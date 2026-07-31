@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026年7月 LFR達成者21名</title>
+<meta name="theme-color" content="#075b3a">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%;background:#053c2c;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Yu Gothic",Meiryo,sans-serif}
+  body{padding:18px 14px calc(28px + env(safe-area-inset-bottom));text-align:center}
+  .wrap{width:min(100%,680px);margin:auto}
+  h1{font-size:22px;margin:4px 0 8px}
+  .note{font-size:14px;line-height:1.7;color:#d8fff0;margin:0 0 14px}
+  .image-box{background:#fff;border-radius:18px;padding:6px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  img{display:block;width:100%;height:auto;border-radius:13px;-webkit-touch-callout:default;user-select:auto}
+  .buttons{display:grid;gap:10px;margin-top:16px}
+  a,button{display:block;width:100%;border:0;border-radius:999px;padding:15px 18px;font-size:17px;font-weight:700;text-decoration:none;cursor:pointer}
+  .save{background:#ffdf55;color:#173b2c}
+  .share{background:#fff;color:#075b3a}
+  .small{font-size:12px;color:#aee8d2;line-height:1.6;margin-top:13px}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <h1>🍎 2026年7月 LFR達成者21名</h1>
+  <p class="note">画像を長押しして「写真に保存」できます。<br>下のボタンから画像だけを開くこともできます。</p>
+
+  <div class="image-box">
+    <img src="./lfr-2026-07.png" alt="2026年7月 LFR達成者21名" id="poster">
+  </div>
+
+  <div class="buttons">
+    <a class="save" href="./lfr-2026-07.png">画像だけを開く・保存</a>
+    <button class="share" type="button" id="shareBtn">共有する</button>
+  </div>
+
+  <p class="small">iPhone：画像を長押し →「写真に保存」<br>Android：画像を長押し →「画像をダウンロード」</p>
+</main>
+<script>
+const shareBtn = document.getElementById('shareBtn');
+shareBtn.addEventListener('click', async () => {
+  const imageUrl = new URL('./lfr-2026-07.png', location.href).href;
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: '2026年7月 LFR達成者21名',
+        text: '2026年7月 LFR達成者21名',
+        url: imageUrl
+      });
+    } catch (_) {}
+  } else {
+    await navigator.clipboard.writeText(imageUrl);
+    shareBtn.textContent = '画像URLをコピーしました';
+    setTimeout(() => shareBtn.textContent = '共有する', 1800);
+  }
+});
+</script>
+</body>
+</html>
