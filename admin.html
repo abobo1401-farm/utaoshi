@@ -36,7 +36,7 @@ hr{margin:22px 0;border:none;border-top:1px solid #e5e5e5;}
 
 
 <div class="card">
-<h2>🍎 歌推し収穫センター</h2><p class="note">接続修正版 2026-09-16b</p>
+<h2>🍎 歌推し収穫センター</h2><p class="note">ゆらゆら・雲・画像投稿版 2026-09-16c</p>
 
 <div class="live" id="liveInfo">読み込み中...</div>
 
@@ -83,7 +83,7 @@ hr{margin:22px 0;border:none;border-top:1px solid #e5e5e5;}
 <p class="note">月を切り替えても過去のデータは消えません。JSONは念のための控えです。</p>
 
 <hr>
-<h3>OBSにりんごの木を表示</h3>
+<h3>Xに木の画像を投稿</h3><button class="sub" id="openShare">X用画像・投稿画面を開く</button><p class="note">編集中の月の木を画像にできます。画像を保存してXへ添付、またはスマホの共有メニューからXを選んでください。</p><h3>OBSにりんごの木を表示</h3>
 <p class="note">「配信中の月」の名簿が自動で反映されます。1本25個、26個目から次の木。5kの切り替えも自動反映します。</p>
 <button class="sub" id="copyTree">OBS用URLをコピー</button>
 <input id="treeUrl" readonly aria-label="OBS用URL">
@@ -148,6 +148,7 @@ let titleDirty = false;
 const $ = id => document.getElementById(id);
 function reportReadError(e){ $("liveInfo").textContent="接続エラー："+explainError(e); $("liveInfo").style.color="#a32222"; }
 
+$("openShare").addEventListener("click",()=>{const url=new URL("./tree.html",location.href);url.searchParams.set("share","1");url.searchParams.set("month",viewMonth||liveMonth);url.searchParams.set("v","20260916c");window.open(url.href,"_blank","noopener,noreferrer");});
 $("treeUrl").value = new URL("./tree.html",location.href).href;
 $("treeUrl").addEventListener("focus", e=>e.target.select());
 $("copyTree").addEventListener("click",async()=>{try{await navigator.clipboard.writeText($("treeUrl").value);$("copyTree").textContent="コピーしました";}catch{$("treeUrl").focus();$("treeUrl").select();alert("URL欄をコピーしてください");}});
