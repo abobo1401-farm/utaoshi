@@ -36,7 +36,7 @@ hr{margin:22px 0;border:none;border-top:1px solid #e5e5e5;}
 
 
 <div class="card">
-<h2>🍎 歌推し収穫センター</h2><p class="note">ゆらゆら・雲・画像投稿版 2026-09-16c</p>
+<h2>🍎 歌推し収穫センター</h2><p class="note">縦画面対応版 2026-09-16d</p>
 
 <div class="live" id="liveInfo">読み込み中...</div>
 
@@ -85,9 +85,12 @@ hr{margin:22px 0;border:none;border-top:1px solid #e5e5e5;}
 <hr>
 <h3>Xに木の画像を投稿</h3><button class="sub" id="openShare">X用画像・投稿画面を開く</button><p class="note">編集中の月の木を画像にできます。画像を保存してXへ添付、またはスマホの共有メニューからXを選んでください。</p><h3>OBSにりんごの木を表示</h3>
 <p class="note">「配信中の月」の名簿が自動で反映されます。1本25個、26個目から次の木。5kの切り替えも自動反映します。</p>
-<button class="sub" id="copyTree">OBS用URLをコピー</button>
-<input id="treeUrl" readonly aria-label="OBS用URL">
-<p class="note">OBSのブラウザソース：幅1080・高さ1080。複数の木は10秒ごとに切り替えます。背景を透過したい場合はURL末尾に ?transparent=1 を付けてください。</p>
+<button class="sub" id="copyTree">正方形のOBS用URLをコピー</button>
+<input id="treeUrl" readonly aria-label="正方形OBS用URL">
+<button class="sub" id="copyPortrait">縦画面のOBS用URLをコピー（9:16）</button>
+<input id="portraitUrl" readonly aria-label="縦画面OBS用URL">
+<p class="note">縦画面：幅1080・高さ1920。木やりんごの形を保ったまま、縦長の背景で表示します。</p>
+<p class="note">正方形：幅1080・高さ1080。複数の木は10秒ごとに切り替えます。コピーしたURLの末尾に &amp;transparent=1 を付けると背景を透過できます。</p>
 <h3>表示ページ</h3>
 <div class="links">
 <a href="./news.html" target="_blank">テロップ news.html</a>
@@ -149,7 +152,11 @@ const $ = id => document.getElementById(id);
 function reportReadError(e){ $("liveInfo").textContent="接続エラー："+explainError(e); $("liveInfo").style.color="#a32222"; }
 
 $("openShare").addEventListener("click",()=>{const url=new URL("./tree.html",location.href);url.searchParams.set("share","1");url.searchParams.set("month",viewMonth||liveMonth);url.searchParams.set("v","20260916c");window.open(url.href,"_blank","noopener,noreferrer");});
-$("treeUrl").value = new URL("./tree.html",location.href).href;
+const squareUrl=new URL("./tree.html",location.href);squareUrl.searchParams.set("v","20260916d");
+$("treeUrl").value = squareUrl.href;
+const portraitUrl=new URL(squareUrl);portraitUrl.searchParams.set("portrait","1");$("portraitUrl").value=portraitUrl.href;
+$("portraitUrl").addEventListener("focus",e=>e.target.select());
+$("copyPortrait").addEventListener("click",async()=>{try{await navigator.clipboard.writeText($("portraitUrl").value);$("copyPortrait").textContent="縦画面URLをコピーしました";}catch{$("portraitUrl").focus();$("portraitUrl").select();alert("URL欄をコピーしてください");}});
 $("treeUrl").addEventListener("focus", e=>e.target.select());
 $("copyTree").addEventListener("click",async()=>{try{await navigator.clipboard.writeText($("treeUrl").value);$("copyTree").textContent="コピーしました";}catch{$("treeUrl").focus();$("treeUrl").select();alert("URL欄をコピーしてください");}});
 window.addEventListener("unhandledrejection",e=>{ $("result").textContent="エラー："+explainError(e.reason); });
