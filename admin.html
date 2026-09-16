@@ -36,7 +36,7 @@ hr{margin:22px 0;border:none;border-top:1px solid #e5e5e5;}
 
 
 <div class="card">
-<h2>🍎 歌推し収穫センター</h2>
+<h2>🍎 歌推し収穫センター</h2><p class="note">接続修正版 2026-09-16b</p>
 
 <div class="live" id="liveInfo">読み込み中...</div>
 
@@ -99,13 +99,41 @@ hr{margin:22px 0;border:none;border-top:1px solid #e5e5e5;}
 </div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-import {
-getFirestore, collection, addDoc, serverTimestamp,
-onSnapshot, deleteDoc, doc, setDoc, updateDoc, getDoc
-} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+const loadFirebase = async () => {
+ const modules = Promise.all([
+ import("https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js"),
+ import("https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js")
+ ]);
+ let timer;
+ try { return await Promise.race([modules,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error("Firebaseライブラリの読み込みが15秒以内に完了しませんでした。回線やコンテンツブロッカーを確認してください。")),15000)})]); }
+ finally { clearTimeout(timer); }
+};
+function explainError(e){
+ const code=e?.code||"";
+ if(code.includes("permission-denied"))return "Firebaseの読み取り権限で拒否されました（permission-denied）。この表示を管理者へ伝えてください。";
+ if(code.includes("unauthenticated"))return "Firebaseの認証が必要です（unauthenticated）。";
+ if(code.includes("unavailable"))return "Firebaseに接続できません（unavailable）。通信状態を確認してください。";
+ return (code?code+"：":"")+(e?.message||String(e));
+}
+try {
+ const [firebaseApp,firebaseStore]=await loadFirebase();
+ const {initializeApp}=firebaseApp;
+ const {getFirestore,collection,addDoc,serverTimestamp,onSnapshot,deleteDoc,doc,setDoc,updateDoc,getDoc}=firebaseStore;
+const firebaseConfig = {
+  apiKey: "AIzaSyDKwFPNTgPJawD47WxuDsJH2-V1E3zWqoU",
+  authDomain: "utaoshi-ringo.firebaseapp.com",
+  projectId: "utaoshi-ringo",
+  storageBucket: "utaoshi-ringo.firebasestorage.app",
+  messagingSenderId: "572385012765",
+  appId: "1:572385012765:web:2f5542f69930f1a714eaf4",
+  measurementId: "G-Q1XJVK2LH0"
+};
 
-import { firebaseConfig } from "./firebase-config.js";
+
+
+
+
+
 
 
 const thisMonth = () => new Intl.DateTimeFormat("sv-SE",{timeZone:"Asia/Tokyo",year:"numeric",month:"2-digit"}).format(new Date());
@@ -118,12 +146,12 @@ let lfrDocs   = [];
 let titleDirty = false;
 
 const $ = id => document.getElementById(id);
-function reportReadError(){ $("liveInfo").textContent="データを読み込めません。Firebaseの読み取り権限と接続を確認してください。"; }
+function reportReadError(e){ $("liveInfo").textContent="接続エラー："+explainError(e); $("liveInfo").style.color="#a32222"; }
 
 $("treeUrl").value = new URL("./tree.html",location.href).href;
 $("treeUrl").addEventListener("focus", e=>e.target.select());
 $("copyTree").addEventListener("click",async()=>{try{await navigator.clipboard.writeText($("treeUrl").value);$("copyTree").textContent="コピーしました";}catch{$("treeUrl").focus();$("treeUrl").select();alert("URL欄をコピーしてください");}});
-window.addEventListener("unhandledrejection",()=>{ $("result").textContent="保存・読み込みに失敗しました。接続とFirebaseの権限を確認してください。"; });
+window.addEventListener("unhandledrejection",e=>{ $("result").textContent="エラー："+explainError(e.reason); });
 /* ---------- 設定 ---------- */
 
 const app = initializeApp(firebaseConfig);
@@ -323,6 +351,15 @@ function download(filename, text, type){
   a.download = filename;
   a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+
+setTimeout(()=>{if($("liveInfo").textContent.includes("読み込み中"))reportReadError(new Error("Firebaseから設定を受信できていません。回線とFirestoreの利用状態を確認してください。"));if($("list").textContent.includes("読み込み中"))$("list").textContent="名簿を受信できていません。接続の回復を待っています。";},15000);
+
+} catch(e) {
+ const message="接続エラー："+explainError(e);
+ document.getElementById("liveInfo").textContent=message;
+ document.getElementById("list").textContent="読み込みを開始できませんでした。上のエラー表示を確認してください。";
+ console.error(e);
 }
 </script>
 </body>
