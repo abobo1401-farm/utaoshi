@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>歌推しポップアップ</title>
+
+<style>
+@font-face{
+  font-family:"Keifont";
+  src:url("./keifont.ttf");
+}
+
+body{
+  margin:0;
+  overflow:hidden;
+  background:transparent;
+  font-family:"Keifont", sans-serif;
+}
+
+#overlay{
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  background:rgba(0,0,0,0.25);
+}
+
+.popup{
+  position:relative;
+  width:760px;
+  padding:45px 35px;
+  text-align:center;
+  background:linear-gradient(#fff8df,#ffe9b8);
+  border:10px solid #8b5a2b;
+  border-radius:36px;
+  box-shadow:0 12px 30px rgba(0,0,0,0.35);
+  animation:popIn .5s ease-out;
+}
+
+.sparkle{
+  position:absolute;
+  font-size:42px;
+  animation:twinkle 1s infinite ease-in-out;
+}
+
+.s1{top:20px;left:35px;}
+.s2{top:20px;right:35px;animation-delay:.2s;}
+.s3{bottom:20px;left:55px;animation-delay:.4s;}
+.s4{bottom:20px;right:55px;animation-delay:.6s;}
+
+.tree{ font-size:58px; margin-bottom:10px; }
+
+.text{
+  font-size:46px;
+  color:#5a3518;
+  line-height:1.5;
+  font-weight:bold;
+}
+
+.apple{
+  font-size:70px;
+  animation:swing 1s infinite ease-in-out;
+}
+
+.name{
+  margin-top:12px;
+  font-size:76px;
+  color:#d6342a;
+  font-weight:bold;
+  text-shadow:
+    3px 3px 0 #fff,
+    6px 6px 0 rgba(0,0,0,0.15);
+}
+
+@keyframes popIn{
+  from{transform:scale(0.7);opacity:0;}
+  to{transform:scale(1);opacity:1;}
+}
+
+@keyframes swing{
+  0%{transform:rotate(-8deg);}
+  50%{transform:rotate(8deg);}
+  100%{transform:rotate(-8deg);}
+}
+
+@keyframes twinkle{
+  0%{transform:scale(.8);opacity:.3;}
+  50%{transform:scale(1.25);opacity:1;}
+  100%{transform:scale(.8);opacity:.3;}
+}
+
+.fadeOut{ animation:fadeOut .7s forwards; }
+
+@keyframes fadeOut{
+  to{opacity:0;transform:scale(0.95);}
+}
+</style>
+</head>
+
+<body>
+
+<audio id="fanfare" src="./fanfare.mp3" preload="auto"></audio>
+
+<div id="overlay">
+  <div class="popup" id="popupBox">
+    <div class="sparkle s1">✨</div>
+    <div class="sparkle s2">✨</div>
+    <div class="sparkle s3">✨</div>
+    <div class="sparkle s4">✨</div>
+
+    <div class="tree">🌳</div>
+    <div class="text">
+      りんごの木に<br>
+      新しい実がなりました
+    </div>
+    <div class="apple" id="apple">🍎</div>
+    <div class="name" id="popupName">ABO</div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+import { getFirestore, collection, onSnapshot, doc }
+  from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDKwFPNTgPJawD47WxuDsJH2-V1E3zWqoU",
+  authDomain: "utaoshi-ringo.firebaseapp.com",
+  projectId: "utaoshi-ringo",
+  storageBucket: "utaoshi-ringo.firebasestorage.app",
+  messagingSenderId: "572385012765",
+  appId: "1:572385012765:web:2f5542f69930f1a714eaf4",
+  measurementId: "G-Q1XJVK2LH0"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+const thisMonth = () => new Date().toISOString().slice(0,7);
+
+let liveMonth   = thisMonth();
+let initialized = false;
+const queue     = [];
+let playing     = false;
+
+onSnapshot(doc(db,"settings","banner"),(snap)=>{
+  liveMonth = (snap.exists() && snap.data().month) || thisMonth();
+});
+
+onSnapshot(collection(db,"utaooshi"),(snapshot)=>{
+
+  if(!initialized){
+    initialized = true;
+    return;
+  }
+
+  snapshot.docChanges().forEach((change)=>{
+    if(change.type !== "added") return;
+    const data = change.doc.data();
+    if(data.month !== liveMonth) return;   // 配信中の月だけ出す
+    queue.push(data);
+  });
+
+  next();
+});
+
+function next(){
+  if(playing || !queue.length) return;
+  const data = queue.shift();
+  showPopup(data.name, data.color);
+}
+
+function showPopup(name,color){
+  playing = true;
+
+  const overlay   = document.getElementById("overlay");
+  const popupBox  = document.getElementById("popupBox");
+  const popupName = document.getElementById("popupName");
+  const apple     = document.getElementById("apple");
+  const fanfare   = document.getElementById("fanfare");
+
+  apple.textContent = color === "green" ? "🍏" : color === "yellow" ? "🍋" : "🍎";
+  popupName.textContent = name + "さん";
+
+  fanfare.currentTime = 0;
+  fanfare.play().catch(()=>{});
+
+  overlay.style.display = "flex";
+  popupBox.classList.remove("fadeOut");
+
+  setTimeout(()=>{ popupBox.classList.add("fadeOut"); }, 3500);
+
+  setTimeout(()=>{
+    overlay.style.display = "none";
+    popupBox.classList.remove("fadeOut");
+    playing = false;
+    next();                               // 連続追加でも順番に出す
+  }, 4300);
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LFR選手権 管理</title>
+<style>
+body{font-family:"Yu Gothic","Meiryo",sans-serif;background:#f5f5f5;padding:20px;margin:0;}
+.card{max-width:640px;margin:auto;background:white;padding:20px;border-radius:16px;box-shadow:0 0 12px rgba(0,0,0,.15);}
+h2{margin-top:0;}
+h3{margin-bottom:6px;}
+label{font-size:14px;color:#555;font-weight:bold;}
+input{width:100%;padding:10px;margin:5px 0 12px;box-sizing:border-box;font-size:16px;border:1px solid #ccc;border-radius:8px;}
+button{padding:9px 13px;border:none;border-radius:8px;cursor:pointer;font-weight:bold;font-size:15px;}
+.add{width:100%;background:#2dd4bf;color:white;font-size:18px;}
+.save{width:100%;background:#0d9488;color:white;font-size:16px;}
+.sub{width:100%;background:#0ea5e9;color:white;margin-top:8px;}
+.ghost{width:100%;background:#eee;color:#333;margin-top:8px;}
+.danger{width:100%;background:#b91c1c;color:white;font-size:14px;margin-top:8px;}
+.plus{background:#ff4d9d;color:white;}
+.minus{background:#60a5fa;color:white;}
+.del{background:#333;color:white;font-size:13px;padding:7px 10px;}
+.item{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #ddd;padding:10px 0;font-size:18px;gap:8px;}
+.item .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.controls{display:flex;gap:6px;align-items:center;}
+.pt{min-width:54px;text-align:center;font-weight:bold;color:#ff4d9d;}
+.rank{width:34px;font-weight:bold;color:#0d9488;}
+hr{margin:22px 0;border:none;border-top:1px solid #e5e5e5;}
+.live{background:#effcf9;border:2px solid #2dd4bf;color:#0d7c6c;padding:10px 12px;border-radius:10px;font-weight:bold;margin-bottom:10px;}
+.warn{background:#fffbe6;border:2px solid #f0b429;color:#8a6100;padding:12px;border-radius:10px;margin:12px 0;}
+.note{font-size:13px;color:#777;line-height:1.6;}
+.msg{color:#0a8f4d;font-weight:bold;min-height:22px;margin:6px 0 0;}
+.months{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+.months button{background:#eef2ff;color:#3730a3;padding:6px 10px;font-size:13px;}
+.months button.on{background:#3730a3;color:white;}
+.links a{display:inline-block;margin:4px 8px 4px 0;font-size:14px;color:#0d9488;}
+
+</style>
+</head>
+<body>
+
+
+<div class="card">
+<h2>🍎 LFR選手権 管理</h2>
+
+<div class="live" id="liveInfo">読み込み中...</div>
+
+<label>編集する月</label>
+<input type="month" id="monthInput">
+<div class="months" id="monthList"></div>
+<button class="save" id="setLive">この月を「配信中の月」にする</button>
+<p class="msg" id="monthMsg"></p>
+
+<div class="warn" id="legacyBox" style="display:none"></div>
+
+<hr>
+<h3 id="addHead">エントリー追加</h3>
+<label>名前</label>
+<input id="name" placeholder="名前を入力">
+<label>ポイント</label>
+<input id="point" type="number" value="1" min="0">
+<button class="add" id="addBtn">追加</button>
+<p class="msg" id="result"></p>
+
+<button class="ghost" id="carryOver">前の月のメンバーを0ptで引き継ぐ</button>
+
+<hr>
+<h3 id="listHead">登録済み一覧</h3>
+<div id="list">読み込み中...</div>
+
+<hr>
+<h3>バックアップ</h3>
+<button class="sub" id="dlCsv">この月をCSVで保存</button>
+<button class="danger" id="wipeMonth">この月のデータを全部消す</button>
+
+<hr>
+<h3>表示ページ</h3>
+<div class="links">
+<a href="./lfr-rank.html" target="_blank">ランキング lfr-rank.html</a>
+<a href="./lfr.html" target="_blank">流れるバナー lfr.html</a>
+<a href="./admin.html">歌推し 管理</a>
+</div>
+<p class="note">過去の月は <b>lfr-rank.html?month=2026-07</b> のように付けると表示できます。</p>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+import {
+getFirestore, collection, addDoc, serverTimestamp,
+onSnapshot, deleteDoc, doc, updateDoc, setDoc
+} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDKwFPNTgPJawD47WxuDsJH2-V1E3zWqoU",
+  authDomain: "utaoshi-ringo.firebaseapp.com",
+  projectId: "utaoshi-ringo",
+  storageBucket: "utaoshi-ringo.firebasestorage.app",
+  messagingSenderId: "572385012765",
+  appId: "1:572385012765:web:2f5542f69930f1a714eaf4",
+  measurementId: "G-Q1XJVK2LH0"
+};
+
+
+const thisMonth = () => new Date().toISOString().slice(0,7);
+const $ = id => document.getElementById(id);
+
+let liveMonth = thisMonth();
+let viewMonth = null;
+let lfrDocs   = [];
+
+
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+const cfgRef = doc(db,"settings","banner");
+
+onSnapshot(cfgRef,(snap)=>{
+  liveMonth = (snap.exists() && snap.data().month) || thisMonth();
+  if(viewMonth === null){ viewMonth = liveMonth; $("monthInput").value = viewMonth; }
+  render();
+});
+
+onSnapshot(collection(db,"lfr"),(snap)=>{
+  lfrDocs = snap.docs.map(d=>({id:d.id,...d.data()}));
+  render();
+});
+
+
+$("monthInput").addEventListener("change",()=>{
+  viewMonth = $("monthInput").value || thisMonth();
+  render();
+});
+
+$("setLive").addEventListener("click", async ()=>{
+  await setDoc(cfgRef,{ month: viewMonth },{ merge:true });
+  $("monthMsg").textContent = `✅ ${jp(viewMonth)}を配信中の月にしました`;
+});
+
+$("addBtn").addEventListener("click", async ()=>{
+  const name  = $("name").value.trim();
+  const point = Number($("point").value || 0);
+  if(!name){ alert("名前を入力してね"); return; }
+
+  await addDoc(collection(db,"lfr"),{
+    name, point, month: viewMonth, created: serverTimestamp()
+  });
+
+  $("result").textContent = `✅ ${jp(viewMonth)}に追加しました`;
+  $("name").value = "";
+  $("point").value = 1;
+  $("name").focus();
+});
+
+$("carryOver").addEventListener("click", async ()=>{
+  const prev = prevMonth(viewMonth);
+  const src  = lfrDocs.filter(d=>d.month === prev);
+  if(!src.length){ alert(`${jp(prev)}のデータがありません`); return; }
+  const already = new Set(lfrDocs.filter(d=>d.month===viewMonth).map(d=>d.name));
+  const add = src.filter(d=>!already.has(d.name));
+  if(!add.length){ alert("全員すでに登録済みです"); return; }
+  if(!confirm(`${jp(prev)}の${add.length}名を、${jp(viewMonth)}に0ptで追加します。よろしいですか？`)) return;
+  for(const d of add){
+    await addDoc(collection(db,"lfr"),{ name:d.name, point:0, month:viewMonth, created:serverTimestamp() });
+  }
+  alert(`${add.length}名を引き継ぎました`);
+});
+
+window.changePoint = async (id,current,diff)=>{
+  await updateDoc(doc(db,"lfr",id),{ point: Math.max(0, Number(current)+diff) });
+};
+
+window.deletePlayer = async (id,name)=>{
+  if(!confirm(name + "を削除しますか？")) return;
+  await deleteDoc(doc(db,"lfr",id));
+};
+
+window.assignLegacy = async ()=>{
+  const targets = lfrDocs.filter(d=>!d.month);
+  if(!targets.length) return;
+  if(!confirm(`月が未設定の${targets.length}件を ${jp(viewMonth)} にまとめます。よろしいですか？`)) return;
+  for(const t of targets) await updateDoc(doc(db,"lfr",t.id),{ month: viewMonth });
+  alert(`${targets.length}件を${jp(viewMonth)}にまとめました`);
+};
+
+$("dlCsv").addEventListener("click",()=>{
+  const rows = [["月","順位","名前","ポイント"]];
+  monthDocs().forEach((d,i)=>rows.push([d.month||"", i+1, d.name||"", d.point||0]));
+  const csv = "\uFEFF" + rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download = `lfr-${viewMonth}.csv`;
+  a.click();
+});
+
+$("wipeMonth").addEventListener("click", async ()=>{
+  const list = monthDocs();
+  if(!list.length){ alert("この月にはデータがありません"); return; }
+  const typed = prompt(`${jp(viewMonth)}の${list.length}件を完全に削除します。\n消してよければ下の欄に「${viewMonth}」と入力してください。`);
+  if(typed !== viewMonth){ alert("中止しました"); return; }
+  for(const d of list) await deleteDoc(doc(db,"lfr",d.id));
+  alert("削除しました");
+});
+
+function monthDocs(){
+  return lfrDocs.filter(d=>d.month === viewMonth)
+                .sort((a,b)=>(Number(b.point)||0)-(Number(a.point)||0) || ts(a.created)-ts(b.created));
+}
+
+function render(){
+  if(viewMonth === null) return;
+
+  $("liveInfo").innerHTML =
+    `配信中の月：<span style="font-size:20px">${jp(liveMonth)}</span>` +
+    (viewMonth === liveMonth ? "（いま編集中の月と同じ）" : `　⚠ 編集中は ${jp(viewMonth)}`);
+
+  const months = [...new Set([...lfrDocs.map(d=>d.month).filter(Boolean), liveMonth, thisMonth()])].sort().reverse();
+  $("monthList").innerHTML = months.map(m=>{
+    const n = lfrDocs.filter(d=>d.month===m).length;
+    return `<button class="${m===viewMonth?"on":""}" onclick="jumpMonth('${m}')">${jp(m)}(${n})</button>`;
+  }).join("");
+
+  const legacy = lfrDocs.filter(d=>!d.month).length;
+  $("legacyBox").style.display = legacy ? "block" : "none";
+  if(legacy){
+    $("legacyBox").innerHTML =
+      `月が入っていないデータが <b>${legacy}件</b> あります。表示ページには出ません。<br>` +
+      `<button class="ghost" onclick="assignLegacy()">${jp(viewMonth)}のデータとしてまとめる</button>`;
+  }
+
+  $("addHead").textContent = `エントリー追加（${jp(viewMonth)}）`;
+  $("addBtn").textContent  = `${jp(viewMonth)}に追加`;
+
+  const list = monthDocs();
+  $("listHead").textContent = `${jp(viewMonth)}の登録：${list.length}名`;
+
+  const box = $("list");
+  box.innerHTML = "";
+  if(!list.length){ box.textContent = "まだ登録がありません"; return; }
+
+  let rank = 0, prevPt = null;
+  list.forEach((d,i)=>{
+    const pt = Number(d.point)||0;
+    if(pt !== prevPt){ rank = i+1; prevPt = pt; }
+    const div = document.createElement("div");
+    div.className = "item";
+    div.innerHTML = `
+      <span class="rank">${rank}位</span>
+      <span class="nm">🍎 ${esc(d.name)}</span>
+      <div class="controls">
+        <button class="minus" onclick="changePoint('${d.id}',${pt},-1)">-1</button>
+        <span class="pt">${pt}pt</span>
+        <button class="plus" onclick="changePoint('${d.id}',${pt},1)">+1</button>
+        <button class="del" onclick="deletePlayer('${d.id}','${esc(d.name)}')">削除</button>
+      </div>`;
+    box.appendChild(div);
+  });
+}
+
+window.jumpMonth = (m)=>{ viewMonth = m; $("monthInput").value = m; render(); };
+
+const ts  = c => c && c.seconds ? c.seconds : 0;
+const jp  = m => m ? `${m.slice(0,4)}年${Number(m.slice(5,7))}月` : "―";
+const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function prevMonth(m){
+  const y = Number(m.slice(0,4)), mo = Number(m.slice(5,7));
+  const d = new Date(y, mo-2, 1);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>LFR選手権バナー</title>
+<style>
+body{
+  margin:0;
+  overflow:hidden;
+  background:transparent;
+  font-family:"Yu Gothic","Meiryo",sans-serif;
+}
+
+.banner{
+  width:100vw;
+  height:72px;
+  display:flex;
+  align-items:center;
+  overflow:hidden;
+  font-size:28px;
+}
+
+.title{
+  height:56px;
+  padding:0 24px;
+  margin-left:8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  white-space:nowrap;
+  border-radius:999px;
+  background:linear-gradient(180deg,#64ffd8,#18cfa2);
+  border:3px solid #d7fff5;
+  color:white;
+  font-weight:bold;
+  text-shadow:2px 2px 0 #12836b;
+  box-shadow:0 0 14px rgba(80,255,210,.8);
+  flex-shrink:0;
+}
+
+.scrollWrap{
+  flex:1;
+  height:56px;
+  margin-left:10px;
+  display:flex;
+  align-items:center;
+  overflow:hidden;
+  border-radius:999px;
+  background:rgba(255,255,255,.92);
+  border:3px solid #d7fff5;
+  box-shadow:0 0 14px rgba(80,255,210,.6);
+}
+
+.scrollText{
+  display:inline-block;
+  white-space:nowrap;
+  padding-left:100%;
+  animation:scroll 45s linear infinite;
+  color:#12836b;
+  font-weight:bold;
+  text-shadow:
+    2px 2px 0 white,
+    3px 3px 0 rgba(0,160,120,.22);
+}
+
+.pt{ color:#ff4d9d; }
+.crown{ margin-right:4px; }
+
+@keyframes scroll{
+  from{transform:translateX(0);}
+  to{transform:translateX(-100%);}
+}
+</style>
+</head>
+<body>
+
+<div class="banner">
+  <div class="title">🍎 LFR選手権</div>
+  <div class="scrollWrap">
+    <div class="scrollText" id="scrollText">読み込み中...</div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+import { getFirestore, collection, onSnapshot, doc }
+  from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDKwFPNTgPJawD47WxuDsJH2-V1E3zWqoU",
+  authDomain: "utaoshi-ringo.firebaseapp.com",
+  projectId: "utaoshi-ringo",
+  storageBucket: "utaoshi-ringo.firebasestorage.app",
+  messagingSenderId: "572385012765",
+  appId: "1:572385012765:web:2f5542f69930f1a714eaf4",
+  measurementId: "G-Q1XJVK2LH0"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+const params     = new URLSearchParams(location.search);
+const fixedMonth = params.get("month");
+const thisMonth  = () => new Date().toISOString().slice(0,7);
+
+let liveMonth = fixedMonth || thisMonth();
+let docsAll   = [];
+
+onSnapshot(doc(db,"settings","banner"),(snap)=>{
+  if(!fixedMonth) liveMonth = (snap.exists() && snap.data().month) || thisMonth();
+  render();
+});
+
+onSnapshot(collection(db,"lfr"),(snap)=>{
+  docsAll = snap.docs.map(d=>d.data());
+  render();
+});
+
+function render(){
+  const list = docsAll
+    .filter(d=>d.month === liveMonth)
+    .sort((a,b)=>(Number(b.point)||0)-(Number(a.point)||0) || ts(a.created)-ts(b.created));
+
+  let text = "【3ptでりんごジュースプレゼント】　";
+  let rank = 0, prevPt = null;
+
+  list.forEach((d,i)=>{
+    const pt = Number(d.point) || 0;
+    if(pt !== prevPt){ rank = i + 1; prevPt = pt; }
+    const mark = rank===1 ? "👑" : rank===2 ? "🥈" : rank===3 ? "🥉" : "🍎";
+    text += `<span class="crown">${mark}</span>${esc(d.name)} <span class="pt">${pt}pt</span>　　`;
+  });
+
+  document.getElementById("scrollText").innerHTML =
+    list.length ? text : "まだ登録がありません🍎";
+}
+
+const ts  = c => c && c.seconds ? c.seconds : 0;
+const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+</script>
+</body>
+</html>

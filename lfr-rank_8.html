@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>LFR選手権 ランキング</title>
+<style>
+@font-face{
+  font-family:"Keifont";
+  src:url("./keifont.ttf");
+  font-display:swap;
+}
+html,body{
+  margin:0;height:100%;overflow:hidden;background:#04231e;
+  font-family:"Keifont","Yu Gothic","Meiryo",sans-serif;
+}
+#stage{
+  position:absolute;top:0;left:0;
+  width:1080px;height:1920px;
+  transform-origin:top left;overflow:hidden;
+  background:
+    radial-gradient(1200px 900px at 50% -180px, rgba(120,255,225,.35), transparent 70%),
+    linear-gradient(180deg,#0b5f52 0%,#0a4a41 45%,#063a33 100%);
+  color:#fff;
+}
+#bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+
+/* ヘッダー */
+#head{position:absolute;top:70px;left:0;right:0;text-align:center;}
+#head .badge{
+  display:inline-block;padding:16px 54px;
+  font-size:66px;font-weight:bold;color:#fff;
+  background:linear-gradient(180deg,#64ffd8,#18cfa2);
+  border:7px solid #d7fff5;border-radius:999px;
+  text-shadow:3px 3px 0 #12836b;
+  box-shadow:0 12px 30px rgba(80,255,210,.45);
+}
+#head .goal{
+  margin-top:18px;font-size:36px;font-weight:bold;color:#c9fff1;
+  text-shadow:2px 2px 0 rgba(0,60,50,.6);
+}
+#head .month{margin-top:8px;font-size:28px;color:#8fe6d3;}
+
+/* ランキング */
+#board{position:absolute;left:54px;right:54px;top:315px;bottom:135px;}
+#board.one-column{display:flex;flex-direction:column;}
+#board.two-column{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+#board.three-column{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.rank-column{display:flex;flex-direction:column;min-width:0;}
+.row{
+  display:flex;align-items:center;gap:16px;
+  background:rgba(255,255,255,.96);
+  border:4px solid #d7fff5;border-radius:34px;
+  padding:0 24px;
+  box-sizing:border-box;
+  box-shadow:0 7px 16px rgba(0,0,0,.24);
+  color:#0d5f52;
+  overflow:hidden;
+}
+.two-column .row{gap:10px;padding:0 14px;border-width:3px;border-radius:28px;}
+.three-column .row{gap:7px;padding:0 10px;border-width:3px;border-radius:22px;}
+.rank{
+  flex-shrink:0;text-align:center;font-weight:bold;
+  color:#0d9488;line-height:1;
+}
+.medal{flex-shrink:0;line-height:1;}
+.name{
+  flex:1;min-width:0;font-weight:bold;
+  white-space:nowrap;overflow:hidden;
+  text-shadow:2px 2px 0 rgba(255,255,255,.9);
+  line-height:1.05;
+}
+.name span{display:inline-block;transform-origin:left center;}
+.pt{flex-shrink:0;font-weight:bold;color:#ff3f95;line-height:1;}
+.pt small{font-size:.55em;margin-left:4px;}
+
+/* 上位3人 */
+.top1{background:linear-gradient(100deg,#fff8dc,#ffe9a8);border-color:#ffd93d;box-shadow:0 0 34px rgba(255,215,60,.75),0 8px 18px rgba(0,0,0,.28);}
+.top2{background:linear-gradient(100deg,#fbfdff,#e2ecf5);border-color:#cfe3f2;}
+.top3{background:linear-gradient(100deg,#fff3e8,#f7ddc4);border-color:#e8b98a;}
+.top1 .rank{color:#c08800;}
+.top2 .rank{color:#7e94a6;}
+.top3 .rank{color:#b07740;}
+
+/* 3pt到達 */
+.goalMark{
+  flex-shrink:0;
+  background:#ff3f95;color:#fff;font-weight:bold;
+  border-radius:999px;line-height:1;
+  box-shadow:0 3px 8px rgba(0,0,0,.25);
+}
+
+#more{
+  position:absolute;left:0;right:0;bottom:86px;
+  text-align:center;font-size:30px;color:#bff3e6;
+}
+#foot{
+  position:absolute;left:0;right:0;bottom:34px;
+  text-align:center;font-size:28px;color:#7fd8c4;
+}
+#empty{
+  position:absolute;left:0;right:0;top:46%;
+  text-align:center;font-size:46px;font-weight:bold;color:#d7fff5;
+  display:none;
+}
+
+/* 保存・ポストのボタン（画像には写りません） */
+#toolbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:100;
+  display:flex;gap:10px;justify-content:center;
+  padding:12px 14px calc(12px + env(safe-area-inset-bottom));
+  background:linear-gradient(180deg,rgba(4,35,30,0),rgba(4,35,30,.92) 45%);
+}
+#toolbar button{
+  flex:1;max-width:230px;
+  padding:14px 10px;font-size:16px;font-weight:bold;
+  border:none;border-radius:14px;cursor:pointer;
+  font-family:inherit;
+  box-shadow:0 4px 14px rgba(0,0,0,.35);
+}
+#saveBtn{background:linear-gradient(180deg,#64ffd8,#18cfa2);color:#0a4a41;}
+#postBtn{background:#111;color:#fff;}
+#toolbar button:disabled{opacity:.5;}
+#toolbar button:focus-visible{outline:3px solid #d7fff5;outline-offset:2px;}
+#toast{
+  position:fixed;left:50%;bottom:96px;transform:translateX(-50%);
+  background:rgba(0,0,0,.85);color:#fff;font-size:14px;font-weight:bold;
+  padding:10px 18px;border-radius:999px;z-index:101;
+  opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;
+}
+#toast.on{opacity:1;}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <img id="bg" src="./bg-lfr.png" alt="" onerror="this.remove()">
+
+  <div id="head">
+    <div class="badge">🍎 LFR選手権</div>
+    <div class="goal">3ptでりんごジュースプレゼント</div>
+    <div class="month" id="monthLabel"></div>
+  </div>
+
+  <div id="board"></div>
+  <div id="more"></div>
+  <div id="empty">エントリー募集中🍎</div>
+  <div id="foot">レッツフレッシュリフレッシュ</div>
+</div>
+
+<div id="toolbar">
+  <button id="saveBtn" type="button">画像を保存</button>
+  <button id="postBtn" type="button">Xでポスト</button>
+</div>
+<div id="toast"></div>
+
+<script type="module">
+/* =======================================================
+   調整用
+   ======================================================= */
+const CONFIG = {
+  minPoint  : 1,   // このpt以上の人を全員表示（?min=0 で0ptの人も出ます）
+  goalPoint : 3,   // 達成マークを付けるポイント
+  twoColFrom: 13,  // この人数を超えたら2列
+  threeColFrom: 30, // この人数を超えたら3列
+
+  // Xに投稿するときの文章（{month}と{count}が置き換わります）
+  postText  : "🍎LFR選手権 {month}の結果🍎\n{count}名がポイント獲得！\n3pt達成でりんごジュースプレゼント🎁\nレッツフレッシュリフレッシュ\n#ABOりんごのお遊び",
+  postTags  : ""
+};
+/* ======================================================= */
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+import { getFirestore, collection, onSnapshot, doc }
+  from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDKwFPNTgPJawD47WxuDsJH2-V1E3zWqoU",
+  authDomain: "utaoshi-ringo.firebaseapp.com",
+  projectId: "utaoshi-ringo",
+  storageBucket: "utaoshi-ringo.firebasestorage.app",
+  messagingSenderId: "572385012765",
+  appId: "1:572385012765:web:2f5542f69930f1a714eaf4",
+  measurementId: "G-Q1XJVK2LH0"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+const params     = new URLSearchParams(location.search);
+const fixedMonth = params.get("month");
+const minPoint   = params.get("min") !== null ? Number(params.get("min")) : CONFIG.minPoint;
+const thisMonth  = () => new Date().toISOString().slice(0,7);
+
+let liveMonth = fixedMonth || thisMonth();
+let docsAll   = [];
+
+const stage = document.getElementById("stage");
+function fit(){
+  const s = Math.min(innerWidth/1080, innerHeight/1920);
+  stage.style.transform = `scale(${s})`;
+  stage.style.left = ((innerWidth  - 1080*s)/2) + "px";
+  stage.style.top  = ((innerHeight - 1920*s)/2) + "px";
+}
+addEventListener("resize", fit);
+fit();
+
+onSnapshot(doc(db,"settings","banner"),(snap)=>{
+  if(!fixedMonth) liveMonth = (snap.exists() && snap.data().month) || thisMonth();
+  render();
+});
+
+onSnapshot(collection(db,"lfr"),(snap)=>{
+  docsAll = snap.docs.map(d=>({id:d.id,...d.data()}));
+  render();
+});
+
+function render(){
+  const all = docsAll
+    .filter(d=>d.month === liveMonth)
+    .sort((a,b)=>(Number(b.point)||0)-(Number(a.point)||0) || ts(a.created)-ts(b.created));
+
+  // 1pt以上の人を全員表示
+  const list    = all.filter(d=>(Number(d.point)||0) >= minPoint);
+  const waiting = all.length - list.length;
+
+  document.getElementById("monthLabel").textContent =
+    `${jp(liveMonth)}　LFR達成者${list.length}名`;
+  document.getElementById("empty").style.display = all.length ? "none" : "block";
+  document.getElementById("more").textContent =
+    waiting > 0 ? `ほか${waiting}名がエントリー中🍎` : "";
+
+  const board = document.getElementById("board");
+  board.innerHTML = "";
+  if(!list.length) return;
+
+  // 人数に応じて列数を決める
+  const columnCount =
+    list.length > CONFIG.threeColFrom ? 3 :
+    list.length > CONFIG.twoColFrom   ? 2 : 1;
+
+  board.className = columnCount === 3 ? "three-column"
+                  : columnCount === 2 ? "two-column" : "one-column";
+
+  const rowsPerColumn = Math.ceil(list.length / columnCount);
+  const area = board.clientHeight;
+  const gap  = columnCount === 3 ? 7
+             : columnCount === 2 ? 11
+             : (list.length <= 6 ? 22 : 13);
+
+  const maxH = columnCount === 3 ? 92 : columnCount === 2 ? 112 : 142;
+  const h    = Math.min(maxH, Math.floor((area - gap*(rowsPerColumn-1)) / rowsPerColumn));
+  const fs   = Math.round(h * (columnCount === 3 ? 0.36 : columnCount === 2 ? 0.36 : 0.39));
+
+  // 同点は同順位
+  const ranked = [];
+  let rank = 0, prevPt = null;
+  list.forEach((d,i)=>{
+    const pt = Number(d.point) || 0;
+    if(pt !== prevPt){ rank = i + 1; prevPt = pt; }
+    ranked.push({d, pt, rank});
+  });
+
+  const columns = [];
+  for(let c=0;c<columnCount;c++){
+    const col = document.createElement("div");
+    col.className = "rank-column";
+    board.appendChild(col);
+    columns.push(col);
+  }
+
+  const nameEls = [];
+
+  ranked.forEach((item,i)=>{
+    const {d, pt, rank} = item;
+    const colIndex  = Math.floor(i / rowsPerColumn);
+    const posInCol  = i % rowsPerColumn;
+    const colLength = Math.min(rowsPerColumn, ranked.length - colIndex * rowsPerColumn);
+
+    const row = document.createElement("div");
+    row.className = "row" + (rank<=3 ? ` top${rank}` : "") + (pt >= CONFIG.goalPoint ? " clear" : "");
+    row.style.height = h + "px";
+    row.style.marginBottom = (posInCol === colLength - 1 ? 0 : gap) + "px";
+
+    const medal = rank===1 ? "👑" : rank===2 ? "🥈" : rank===3 ? "🥉"
+                : (columnCount === 3 ? "" : "🍎");
+    const rankWidth = Math.round(h * (columnCount === 1 ? 0.72 : 0.5));
+
+    row.innerHTML = `
+      <div class="rank"  style="font-size:${Math.round(fs*0.82)}px;width:${rankWidth}px">${rank}</div>
+      <div class="medal" style="font-size:${Math.round(fs*0.9)}px">${medal}</div>
+      <div class="name"  style="font-size:${fs}px" data-fs="${fs}"><span>${esc(d.name)}</span></div>
+      <div class="pt"    style="font-size:${Math.round(fs*1.0)}px">${pt}<small>pt</small></div>
+      ${pt >= CONFIG.goalPoint
+        ? `<div class="goalMark" style="font-size:${Math.round(fs*0.62)}px;padding:${Math.round(fs*0.16)}px ${Math.round(fs*0.34)}px">${columnCount===1 ? "🎁達成" : "🎁"}</div>`
+        : ""}`;
+
+    columns[colIndex].appendChild(row);
+    nameEls.push(row.querySelector(".name"));
+  });
+
+  // 長い名前は枠に収まるまで自動で縮める（切らない）
+  requestAnimationFrame(()=>fitNames(nameEls));
+}
+
+/* 名前が枠に収まるまで縮める（切らない） */
+function fitNames(nameEls){
+  nameEls.forEach(el=>{
+    const span = el.firstElementChild;
+    if(!span) return;
+
+    const base = parseFloat(el.dataset.fs) || parseFloat(getComputedStyle(el).fontSize);
+    el.style.fontSize = base + "px";
+    span.style.transform = "";
+
+    const avail = el.clientWidth;
+    if(avail <= 0) return;
+
+    let need = span.scrollWidth;
+    if(need <= avail) return;
+
+    // 1) 文字サイズを下げる（形はそのまま）
+    let size = Math.max(11, Math.floor(base * avail / need));
+    el.style.fontSize = size + "px";
+
+    // 端数で入りきらないことがあるので数回だけ詰める
+    for(let i = 0; i < 4 && span.scrollWidth > avail && size > 11; i++){
+      size -= 1;
+      el.style.fontSize = size + "px";
+    }
+
+    // 2) それでも入らないぶんだけ横に詰める
+    need = span.scrollWidth;
+    if(need > avail){
+      span.style.transform = `scaleX(${avail / need})`;
+    }
+  });
+}
+
+
+/* =======================================================
+   画像として保存・Xにポスト
+   ======================================================= */
+const toolbar = document.getElementById("toolbar");
+const toast   = document.getElementById("toast");
+
+// OBSで開いたときや ?ui=off のときはボタンを隠す
+if(window.obsstudio || params.get("ui") === "off"){
+  toolbar.style.display = "none";
+}
+
+let toastTimer = null;
+function say(msg){
+  toast.textContent = msg;
+  toast.classList.add("on");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>toast.classList.remove("on"), 2400);
+}
+
+let html2canvasReady = null;
+function loadHtml2canvas(){
+  if(window.html2canvas) return Promise.resolve();
+  if(html2canvasReady) return html2canvasReady;
+  html2canvasReady = new Promise((ok,ng)=>{
+    const sc = document.createElement("script");
+    sc.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+    sc.onload = ok;
+    sc.onerror = ()=>ng(new Error("html2canvas load failed"));
+    document.head.appendChild(sc);
+  });
+  return html2canvasReady;
+}
+
+/* 1080×1920のPNGを作る */
+async function makeImage(){
+  await loadHtml2canvas();
+  if(document.fonts && document.fonts.ready) await document.fonts.ready;
+
+  // 縮小表示を一旦解除して原寸で撮る
+  const keep = { transform: stage.style.transform, left: stage.style.left, top: stage.style.top };
+  stage.style.transform = "none";
+  stage.style.left = "0px";
+  stage.style.top  = "0px";
+  toolbar.style.visibility = "hidden";
+
+  try{
+    const canvas = await html2canvas(stage, {
+      width: 1080, height: 1920,
+      windowWidth: 1080, windowHeight: 1920,
+      scale: 1, useCORS: true, backgroundColor: null, logging: false
+    });
+    return await new Promise(res=>canvas.toBlob(res, "image/png"));
+  } finally {
+    stage.style.transform = keep.transform;
+    stage.style.left = keep.left;
+    stage.style.top  = keep.top;
+    toolbar.style.visibility = "";
+    fit();
+  }
+}
+
+function fileName(){
+  return `LFR選手権_${liveMonth}.png`;
+}
+
+function buildText(){
+  const count = document.querySelectorAll(".row").length;
+  return CONFIG.postText
+    .replace("{month}", jp(liveMonth))
+    .replace("{count}", count) + (CONFIG.postTags ? "\n" + CONFIG.postTags : "");
+}
+
+const saveBtn = document.getElementById("saveBtn");
+const postBtn = document.getElementById("postBtn");
+
+saveBtn.addEventListener("click", async ()=>{
+  saveBtn.disabled = true;
+  say("画像を作っています…");
+  try{
+    const blob = await makeImage();
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = fileName();
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+    say("保存しました");
+  }catch(e){
+    console.error(e);
+    say("画像を作れませんでした");
+  }
+  saveBtn.disabled = false;
+});
+
+postBtn.addEventListener("click", async ()=>{
+  postBtn.disabled = true;
+  say("画像を作っています…");
+  try{
+    const blob = await makeImage();
+    const file = new File([blob], fileName(), { type:"image/png" });
+    const text = buildText();
+
+    // スマホなら共有メニューからXを選べる（画像もそのまま付きます）
+    if(navigator.canShare && navigator.canShare({ files:[file] })){
+      await navigator.share({ files:[file], text });
+      postBtn.disabled = false;
+      return;
+    }
+
+    // パソコンの場合は画像を保存してから投稿画面を開く
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = fileName();
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+
+    window.open("https://x.com/intent/post?text=" + encodeURIComponent(text), "_blank", "noopener");
+    say("画像を保存しました。投稿画面で貼り付けてください");
+  }catch(e){
+    if(e && e.name === "AbortError"){ postBtn.disabled = false; return; }
+    console.error(e);
+    say("うまくいきませんでした");
+  }
+  postBtn.disabled = false;
+});
+
+function ts(c){ return c && c.seconds ? c.seconds : 0; }
+function jp(m){ return `${m.slice(0,4)}年${Number(m.slice(5,7))}月`; }
+function esc(s){ return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+</script>
+</body>
+</html>

@@ -2,59 +2,175 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>2026年7月 LFR達成者21名</title>
-<meta name="theme-color" content="#075b3a">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>歌推し収穫システム</title>
 <style>
-  *{box-sizing:border-box}
-  html,body{margin:0;min-height:100%;background:#053c2c;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Yu Gothic",Meiryo,sans-serif}
-  body{padding:18px 14px calc(28px + env(safe-area-inset-bottom));text-align:center}
-  .wrap{width:min(100%,680px);margin:auto}
-  h1{font-size:22px;margin:4px 0 8px}
-  .note{font-size:14px;line-height:1.7;color:#d8fff0;margin:0 0 14px}
-  .image-box{background:#fff;border-radius:18px;padding:6px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
-  img{display:block;width:100%;height:auto;border-radius:13px;-webkit-touch-callout:default;user-select:auto}
-  .buttons{display:grid;gap:10px;margin-top:16px}
-  a,button{display:block;width:100%;border:0;border-radius:999px;padding:15px 18px;font-size:17px;font-weight:700;text-decoration:none;cursor:pointer}
-  .save{background:#ffdf55;color:#173b2c}
-  .share{background:#fff;color:#075b3a}
-  .small{font-size:12px;color:#aee8d2;line-height:1.6;margin-top:13px}
+:root{ --pink:#ff4d9d; --teal:#2dd4bf; --brown:#7a4a2b; }
+*{box-sizing:border-box;}
+body{
+  margin:0;padding:26px 18px 60px;
+  font-family:"Yu Gothic","Meiryo",sans-serif;
+  background:linear-gradient(180deg,#ffeef7 0%,#fff8e7 55%,#eaf7dc 100%);
+  min-height:100vh;color:#4a3020;
+}
+.wrap{max-width:520px;margin:auto;}
+h1{font-size:26px;margin:0 0 4px;}
+.lead{font-size:14px;color:#8a6a55;margin:0 0 24px;}
+h2{
+  font-size:15px;margin:26px 0 10px;color:#8a6a55;
+  border-bottom:2px solid rgba(0,0,0,.08);padding-bottom:6px;
+}
+a.tile{
+  display:flex;align-items:center;gap:14px;
+  background:#fff;border-radius:14px;padding:16px 18px;margin-bottom:10px;
+  text-decoration:none;color:inherit;
+  box-shadow:0 3px 10px rgba(0,0,0,.09);
+  border-left:7px solid var(--pink);
+  transition:transform .12s ease, box-shadow .12s ease;
+}
+a.tile:hover,a.tile:focus{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.15);}
+a.tile:focus-visible{outline:3px solid var(--pink);outline-offset:2px;}
+a.tile.t{border-left-color:var(--teal);}
+.ico{font-size:30px;line-height:1;}
+.tx strong{display:block;font-size:17px;}
+.tx span{font-size:12.5px;color:#8a6a55;}
+.note{
+  background:rgba(255,255,255,.75);border-radius:12px;padding:14px 16px;
+  font-size:13px;line-height:1.75;color:#6b5442;margin-top:24px;
+}
+.note code{background:#fff0f7;padding:2px 6px;border-radius:4px;font-size:12px;}
+
+/* 管理セクションの目隠し */
+#adminLock{
+  background:#fff;border-radius:14px;padding:18px;
+  box-shadow:0 3px 10px rgba(0,0,0,.09);
+  border-left:7px solid #9ca3af;
+}
+#adminLock p{margin:0 0 12px;font-size:13.5px;color:#8a6a55;}
+#adminLock .row{display:flex;gap:8px;}
+#adminLock input{
+  flex:1;min-width:0;padding:11px 12px;font-size:16px;
+  border:2px solid #e5d5cc;border-radius:10px;
+}
+#adminLock button{
+  padding:11px 20px;font-size:16px;font-weight:bold;
+  background:var(--pink);color:#fff;border:none;border-radius:10px;cursor:pointer;
+}
+#adminLock .err{color:#b91c1c;font-size:13px;font-weight:bold;min-height:18px;margin:8px 0 0;}
+#hideAdmin{
+  display:block;margin:2px 0 0 auto;padding:6px 12px;font-size:12px;
+  background:#eee;color:#555;border:none;border-radius:8px;cursor:pointer;
+}
 </style>
 </head>
 <body>
-<main class="wrap">
-  <h1>🍎 2026年7月 LFR達成者21名</h1>
-  <p class="note">画像を長押しして「写真に保存」できます。<br>下のボタンから画像だけを開くこともできます。</p>
+<div class="wrap">
 
-  <div class="image-box">
-    <img src="./lfr-2026-07.png" alt="2026年7月 LFR達成者21名" id="poster">
+<h1>🍎 歌推し収穫システム</h1>
+<p class="lead">ABO りんごのお遊び</p>
+
+<h2>配信で映すページ</h2>
+
+<a class="tile" href="./tree.html">
+  <span class="ico">🌳</span>
+  <span class="tx"><strong>りんごの木</strong><span>名前が実になって並びます・縦1080×1920</span></span>
+</a>
+
+<a class="tile t" href="./lfr-rank.html">
+  <span class="ico">🏆</span>
+  <span class="tx"><strong>LFR選手権 ランキング</strong><span>順位表・縦1080×1920</span></span>
+</a>
+
+<a class="tile" href="./news.html">
+  <span class="ico">📺</span>
+  <span class="tx"><strong>収穫テロップ</strong><span>下に流れる帯・OBS用</span></span>
+</a>
+
+<a class="tile" href="./popup.html">
+  <span class="ico">✨</span>
+  <span class="tx"><strong>収穫ポップアップ</strong><span>追加した瞬間に出る演出・OBS用</span></span>
+</a>
+
+<a class="tile t" href="./lfr.html">
+  <span class="ico">🎏</span>
+  <span class="tx"><strong>LFR流れるバナー</strong><span>下に流れる帯・OBS用</span></span>
+</a>
+
+<h2>操作するページ</h2>
+
+<div id="adminLock">
+  <p>管理ページを開くには合言葉を入れてください</p>
+  <div class="row">
+    <input type="password" id="pass" placeholder="合言葉" autocomplete="current-password">
+    <button id="unlock">開く</button>
   </div>
+  <p class="err" id="err"></p>
+</div>
 
-  <div class="buttons">
-    <a class="save" href="./lfr-2026-07.png">画像だけを開く・保存</a>
-    <button class="share" type="button" id="shareBtn">共有する</button>
-  </div>
+<div id="adminLinks" style="display:none">
+  <a class="tile" href="./admin.html">
+    <span class="ico">🍏</span>
+    <span class="tx"><strong>歌推し 管理</strong><span>名前の追加・月の切り替え・バックアップ</span></span>
+  </a>
 
-  <p class="small">iPhone：画像を長押し →「写真に保存」<br>Android：画像を長押し →「画像をダウンロード」</p>
-</main>
+  <a class="tile t" href="./admin-lfr.html">
+    <span class="ico">🎯</span>
+    <span class="tx"><strong>LFR選手権 管理</strong><span>ポイントの増減・月の切り替え</span></span>
+  </a>
+
+  <button id="hideAdmin">かくす</button>
+</div>
+
+<div class="note">
+過去の月を見るときは、うしろに <code>?month=2026-07</code> を付けます。<br>
+例：<code>tree.html?month=2026-07</code><br><br>
+管理ページはこのメニューからは合言葉で開きます。<br><code>admin.html</code> を直接ブックマークしておけば合言葉なしで開けます。
+</div>
+
+</div>
+
 <script>
-const shareBtn = document.getElementById('shareBtn');
-shareBtn.addEventListener('click', async () => {
-  const imageUrl = new URL('./lfr-2026-07.png', location.href).href;
-  if (navigator.share) {
-    try {
-      await navigator.share({
-        title: '2026年7月 LFR達成者21名',
-        text: '2026年7月 LFR達成者21名',
-        url: imageUrl
-      });
-    } catch (_) {}
-  } else {
-    await navigator.clipboard.writeText(imageUrl);
-    shareBtn.textContent = '画像URLをコピーしました';
-    setTimeout(() => shareBtn.textContent = '共有する', 1800);
+/* =======================================================
+   合言葉（好きな言葉に変えてください）
+   ※ このメニューに管理リンクを出すためだけのものです
+   ======================================================= */
+const PASSPHRASE = "ringo1401";
+/* ======================================================= */
+
+const KEY   = "utaoshi-menu-admin";
+const lock  = document.getElementById("adminLock");
+const links = document.getElementById("adminLinks");
+const pass  = document.getElementById("pass");
+const err   = document.getElementById("err");
+
+function show(){
+  lock.style.display  = "none";
+  links.style.display = "block";
+}
+function hide(){
+  localStorage.removeItem(KEY);
+  lock.style.display  = "block";
+  links.style.display = "none";
+  pass.value = "";
+  err.textContent = "";
+}
+function unlock(){
+  if(pass.value === PASSPHRASE){
+    localStorage.setItem(KEY, "1");
+    show();
+  }else{
+    err.textContent = "合言葉がちがいます";
+    pass.value = "";
+    pass.focus();
   }
-});
+}
+
+document.getElementById("unlock").addEventListener("click", unlock);
+document.getElementById("hideAdmin").addEventListener("click", hide);
+pass.addEventListener("keydown", e=>{ if(e.key === "Enter") unlock(); });
+
+if(localStorage.getItem(KEY) === "1") show();
 </script>
+
 </body>
 </html>

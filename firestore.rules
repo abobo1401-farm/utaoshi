@@ -1,0 +1,52 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 期限切れで止まらないよう、日付での制限は入れていません
+
+    match /utaooshi/{docId} {
+      allow read: if true;
+
+      allow create: if request.resource.data.keys().hasOnly(['name','color','month','created'])
+                    && request.resource.data.name is string
+                    && request.resource.data.name.size() > 0
+                    && request.resource.data.name.size() <= 30
+                    && request.resource.data.month is string
+                    && request.resource.data.month.matches('[0-9]{4}-[0-9]{2}')
+                    && request.resource.data.color in ['red','green','yellow'];
+
+      allow update: if request.resource.data.name == resource.data.name;
+      allow delete: if true;
+    }
+
+    match /lfr/{docId} {
+      allow read: if true;
+
+      allow create: if request.resource.data.keys().hasOnly(['name','point','month','created'])
+                    && request.resource.data.name is string
+                    && request.resource.data.name.size() > 0
+                    && request.resource.data.name.size() <= 30
+                    && request.resource.data.point is int
+                    && request.resource.data.point >= 0
+                    && request.resource.data.point <= 999
+                    && request.resource.data.month is string
+                    && request.resource.data.month.matches('[0-9]{4}-[0-9]{2}');
+
+      allow update: if request.resource.data.name == resource.data.name
+                    && request.resource.data.point is int
+                    && request.resource.data.point >= 0
+                    && request.resource.data.point <= 999;
+      allow delete: if true;
+    }
+
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // 上以外は全部禁止
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
