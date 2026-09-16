@@ -36,7 +36,7 @@ hr{margin:22px 0;border:none;border-top:1px solid #e5e5e5;}
 
 
 <div class="card">
-<h2>🍎 歌推し収穫センター</h2><p class="note">縦画面対応版 2026-09-16d</p>
+<h2>🍎 歌推し収穫センター</h2><p class="note">位置の微調整対応版 2026-09-16f</p>
 
 <div class="live" id="liveInfo">読み込み中...</div>
 
@@ -83,7 +83,18 @@ hr{margin:22px 0;border:none;border-top:1px solid #e5e5e5;}
 <p class="note">月を切り替えても過去のデータは消えません。JSONは念のための控えです。</p>
 
 <hr>
-<h3>Xに木の画像を投稿</h3><button class="sub" id="openShare">X用画像・投稿画面を開く</button><p class="note">編集中の月の木を画像にできます。画像を保存してXへ添付、またはスマホの共有メニューからXを選んでください。</p><h3>OBSにりんごの木を表示</h3>
+
+<hr><h3>縦画面の位置を微調整</h3>
+<p class="note">木と地面を合わせて調整できます。数値を大きくすると下に移動します。保存するとOBSへ反映されます（全月共通）。</p>
+<iframe id="layoutPreview" title="縦画面の位置調整プレビュー" style="display:block;width:min(100%,270px);aspect-ratio:9/16;border:1px solid #ddd;margin:12px auto;background:#dff6ff" loading="lazy"></iframe>
+<label for="treeY">木の上下位置：<output id="treeYValue">50%</output></label>
+<input type="range" id="treeY" min="35" max="65" step="0.5" value="50">
+<label for="groundY">地面の高さ：<output id="groundYValue">76.5%</output></label>
+<input type="range" id="groundY" min="50" max="95" step="0.5" value="76.5">
+<button class="save" id="saveLayout">位置を保存してOBSに反映</button>
+<button class="ghost" id="resetLayout">中央の配置に戻す</button>
+<p id="layoutMsg" class="msg" role="status"></p>
+<hr><h3>Xに木の画像を投稿</h3><button class="sub" id="openShare">X用画像・投稿画面を開く</button><p class="note">編集中の月の木を画像にできます。画像を保存してXへ添付、またはスマホの共有メニューからXを選んでください。</p><h3>OBSにりんごの木を表示</h3>
 <p class="note">「配信中の月」の名簿が自動で反映されます。1本25個、26個目から次の木。5kの切り替えも自動反映します。</p>
 <button class="sub" id="copyTree">正方形のOBS用URLをコピー</button>
 <input id="treeUrl" readonly aria-label="正方形OBS用URL">
@@ -147,12 +158,14 @@ let titles    = {};            // 月ごとのタイトル
 let utaDocs   = [];
 let lfrDocs   = [];
 let titleDirty = false;
+let layoutDirty=false;
+let layoutSaving=false;
 
 const $ = id => document.getElementById(id);
 function reportReadError(e){ $("liveInfo").textContent="接続エラー："+explainError(e); $("liveInfo").style.color="#a32222"; }
 
 $("openShare").addEventListener("click",()=>{const url=new URL("./tree.html",location.href);url.searchParams.set("share","1");url.searchParams.set("month",viewMonth||liveMonth);url.searchParams.set("v","20260916c");window.open(url.href,"_blank","noopener,noreferrer");});
-const squareUrl=new URL("./tree.html",location.href);squareUrl.searchParams.set("v","20260916d");
+const squareUrl=new URL("./tree.html",location.href);squareUrl.searchParams.set("v","20260916f");
 $("treeUrl").value = squareUrl.href;
 const portraitUrl=new URL(squareUrl);portraitUrl.searchParams.set("portrait","1");$("portraitUrl").value=portraitUrl.href;
 $("portraitUrl").addEventListener("focus",e=>e.target.select());
@@ -170,6 +183,7 @@ onSnapshot(cfgRef,(snap)=>{
   const d = snap.exists() ? snap.data() : {};
   liveMonth = d.month || thisMonth();
   titles    = d.titles || {};
+  if(!layoutDirty){const layout=d.portraitLayout||{};$("treeY").value=Number.isFinite(Number(layout.treeY))?Math.min(65,Math.max(35,Number(layout.treeY))):50;$("groundY").value=Number.isFinite(Number(layout.groundY))?Math.min(95,Math.max(50,Number(layout.groundY))):76.5;sendLayoutPreview();}
   if(!Object.keys(titles).length && d.title) titles[liveMonth] = d.title;
   if(viewMonth === null){
     viewMonth = liveMonth;
@@ -188,6 +202,18 @@ onSnapshot(collection(db,"lfr"),(snap)=>{
   lfrDocs = snap.docs.map(d=>({id:d.id,...d.data()}));
 });
 
+/* ---------- 縦画面の位置調整 ---------- */
+function layoutValues(){return {treeY:Number($("treeY").value),groundY:Number($("groundY").value)};}
+function sendLayoutPreview(){const layout=layoutValues();$("treeYValue").textContent=layout.treeY+"%";$("groundYValue").textContent=layout.groundY+"%";$("layoutPreview").contentWindow?.postMessage({type:"utaoshi-portrait-layout",layout},location.origin);}
+$("layoutPreview").addEventListener("load",sendLayoutPreview);
+["treeY","groundY"].forEach(id=>$(id).addEventListener("input",()=>{layoutDirty=true;$("layoutMsg").textContent="調整中：保存するとOBSに反映されます";sendLayoutPreview();}));
+$("resetLayout").addEventListener("click",()=>{$("treeY").value=50;$("groundY").value=76.5;layoutDirty=true;sendLayoutPreview();$("layoutMsg").textContent="中央の配置に戻しました。保存して反映してください。";});
+$("saveLayout").addEventListener("click",async()=>{
+ if(layoutSaving)return;layoutSaving=true;const saved=layoutValues();$("saveLayout").disabled=true;$("layoutMsg").textContent="保存しています…";
+ try{await setDoc(cfgRef,{portraitLayout:saved},{merge:true});const current=layoutValues();layoutDirty=current.treeY!==saved.treeY||current.groundY!==saved.groundY;$("layoutMsg").textContent=layoutDirty?"保存しました。さらに動かした分は未保存です。":"✅ 保存しました。OBSに反映されます。";}
+ catch(e){$("layoutMsg").textContent="保存できませんでした："+explainError(e);}
+ finally{layoutSaving=false;$("saveLayout").disabled=false;}
+});
 /* ---------- 月の操作 ---------- */
 $("monthInput").addEventListener("change",()=>{
   viewMonth = $("monthInput").value || thisMonth();
@@ -280,6 +306,7 @@ function monthDocs(){
 
 function renderAll(){
   if(viewMonth === null) return;
+  if($("layoutPreview").dataset.month!==viewMonth){const previewUrl=new URL("./tree.html",location.href);previewUrl.searchParams.set("portrait","1");previewUrl.searchParams.set("layoutPreview","1");previewUrl.searchParams.set("month",viewMonth);previewUrl.searchParams.set("v","20260916f");$("layoutPreview").src=previewUrl.href;$("layoutPreview").dataset.month=viewMonth;}
 
   $("liveInfo").innerHTML =
     `配信中の月：<span style="font-size:20px">${jp(liveMonth)}</span>` +
